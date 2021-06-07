@@ -49,7 +49,7 @@ public class notepadFrame extends JFrame {
 
     }
 
-    private void makeMenu(){
+    private void makeMenu() {
         JMenuBar menuBar = new JMenuBar();
         menuBar.add(makeFileMenu());
         menuBar.add(makeEditMenu());
@@ -58,7 +58,7 @@ public class notepadFrame extends JFrame {
         setJMenuBar(menuBar);
     }
 
-    private JMenu makeFileMenu(){
+    private JMenu makeFileMenu() {
         JMenu file = new JMenu("File");
 
         JMenuItem itemNew = new JMenuItem("New");
@@ -127,13 +127,13 @@ public class notepadFrame extends JFrame {
         return file;
     }
 
-    private JMenu makeEditMenu(){
+    private JMenu makeEditMenu() {
         JMenu edit = new JMenu("Edit");
 
         return edit;
     }
 
-    private JMenu makeFormatMenu(){
+    private JMenu makeFormatMenu() {
         JMenu format = new JMenu("Format");
 
         return format;
@@ -146,18 +146,7 @@ public class notepadFrame extends JFrame {
             if (openWindows == 0)
                 System.exit(0);
         }
-        showSaveDialogue();
-    }
-
-    private void showSaveDialogue(){
-        String[] options = {"Save", "Don't save", "Cancel"};
-        int confirmed = JOptionPane.showOptionDialog(notepadFrame.this,
-                "Save the changes?",
-                "Exit...",
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null, options, options[0]
-        );
+        int confirmed = showSaveDialogue();
 
         if (confirmed == 0) {
             if (optionSave()) {
@@ -174,25 +163,22 @@ public class notepadFrame extends JFrame {
         }
     }
 
+    private int showSaveDialogue() {
+        String[] options = {"Save", "Don't save", "Cancel"};
+        int confirmed = JOptionPane.showOptionDialog(notepadFrame.this,
+                "Save the changes?",
+                "Exit...",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null, options, options[0]
+        );
+
+        return confirmed;
+    }
+
     private void openOption() {
 
-        if (changesMade) {
-            String[] options = {"Save", "Don't save", "Cancel"};
-            int confirmed = JOptionPane.showOptionDialog(notepadFrame.this,
-                    "Save the changes?",
-                    "Exit...",
-                    JOptionPane.DEFAULT_OPTION,
-                    JOptionPane.QUESTION_MESSAGE,
-                    null, options, options[0]
-            );
 
-            if (confirmed == 0) {
-                if (!optionSave()) return;
-            } else if (confirmed == 2) {
-                return;
-            }
-        }
-        String path = "";
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File("C:/Users/"));
         fileChooser.setDialogTitle("Select a folder...");
@@ -201,24 +187,45 @@ public class notepadFrame extends JFrame {
                 new FileNameExtensionFilter("TEXT FILES", "txt", "text");
         fileChooser.setFileFilter(filter);
 
-        if(fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION){
-            path = fileChooser.getSelectedFile().getAbsolutePath();
+        if (fileChooser.showOpenDialog(null) != JFileChooser.APPROVE_OPTION) return;
 
-            try {
-                BufferedReader br = new BufferedReader(new FileReader(path));
-                String line;
-                StringBuilder stringBuilder = new StringBuilder();
-                while ((line = br.readLine()) != null) {
-                    stringBuilder.append(line).append("\n");
-                    if(changesMade){
+        String path = fileChooser.getSelectedFile().getAbsolutePath();
+        String fileName = fileChooser.getSelectedFile().getName();
 
-                    }
+        if (changesMade) {
+            int confirmed = showSaveDialogue();
+
+            if (confirmed == 0) {
+                if (optionSave()) {
+                    textArea.setText(readTextFile(path));
+                    this.path = path;
+                    changesMade = false;
+                    setTitle(fileName);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+            } else if (confirmed == 1) {
+                textArea.setText(readTextFile(path));
+                this.path = path;
+                changesMade = false;
+                setTitle(fileName);
             }
         }
 
+
+    }
+
+    private String readTextFile(String path) {
+        String line;
+        StringBuilder stringBuilder = new StringBuilder();
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(path));
+            while ((line = br.readLine()) != null) {
+                stringBuilder.append(line).append("\n");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return stringBuilder.toString();
     }
 
     private boolean optionSaveAs() {
@@ -290,7 +297,6 @@ public class notepadFrame extends JFrame {
         return true;
     }
 
-
     private boolean checkFilesInDirectory(File file, String fileName) {
         fileName = fileName.substring(1);
         String[] contents = file.list();
@@ -299,7 +305,6 @@ public class notepadFrame extends JFrame {
         }
         return false;
     }
-
 
     private String fileNameChooser() {
         try {
