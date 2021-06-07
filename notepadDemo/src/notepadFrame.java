@@ -7,6 +7,8 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.*;
 import java.io.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 
 public class notepadFrame extends JFrame {
@@ -181,7 +183,26 @@ public class notepadFrame extends JFrame {
             textArea.replaceSelection("");
         });
 
+        edit.addSeparator();
+
+        JMenuItem timeDateItem = new JMenuItem("Time/Date");
+
+        timeDateItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                pasteTimeDate();
+            }
+        });
+
+        edit.add(timeDateItem);
+
         return edit;
+    }
+
+    private void pasteTimeDate(){
+        LocalDateTime localDateTime = LocalDateTime.now();
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("h:m a YYYY-MM-dd");
+        textArea.setText(textArea.getText() + dtf.format(localDateTime));
     }
 
     private void copyText(String selectedText) {
@@ -221,15 +242,13 @@ public class notepadFrame extends JFrame {
 
     private int showSaveDialogue() {
         String[] options = {"Save", "Don't save", "Cancel"};
-        int confirmed = JOptionPane.showOptionDialog(notepadFrame.this,
+        return JOptionPane.showOptionDialog(notepadFrame.this,
                 "Save the changes?",
                 "Exit...",
                 JOptionPane.DEFAULT_OPTION,
                 JOptionPane.QUESTION_MESSAGE,
                 null, options, options[0]
         );
-
-        return confirmed;
     }
 
     private void openOption() {
