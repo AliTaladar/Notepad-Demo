@@ -1,5 +1,10 @@
 import javax.swing.*;
+import javax.swing.event.CaretEvent;
+import javax.swing.event.CaretListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.*;
 import java.io.*;
 
@@ -9,6 +14,8 @@ public class notepadFrame extends JFrame {
     private String path = null;
     boolean changesMade = false;
     private static int openWindows = 0;
+    private JMenuItem[] editMenuItems = {new JMenuItem("Cut"), new JMenuItem("Copy"),
+            new JMenuItem("Paste"), new JMenuItem("Delete")};
 
     public notepadFrame(String text) {
         super("Notepad");
@@ -24,12 +31,33 @@ public class notepadFrame extends JFrame {
         textArea.setWrapStyleWord(true);
         textArea.setText(text);
 
+
         textArea.addKeyListener(new KeyAdapter() {
             @Override
             public void keyTyped(KeyEvent e) {
                 if (!changesMade) {
                     changesMade = true;
                     setTitle(getTitle() + "*");
+                }
+            }
+        });
+
+        textArea.addCaretListener(new CaretListener() {
+            @Override
+            public void caretUpdate(CaretEvent e) {
+                int length = textArea.getSelectionEnd() - textArea.getSelectionStart();
+                if (length > 0) {
+                    for (int i = 0; i < editMenuItems.length; i++) {
+                        if (i != 2)
+                            editMenuItems[i].setEnabled(true);
+                    }
+                } else {
+                    if (editMenuItems[0].isEnabled()) {
+                        for (int i = 0; i < editMenuItems.length; i++) {
+                            if (i != 2)
+                                editMenuItems[i].setEnabled(false);
+                        }
+                    }
                 }
             }
         });
@@ -130,7 +158,36 @@ public class notepadFrame extends JFrame {
     private JMenu makeEditMenu() {
         JMenu edit = new JMenu("Edit");
 
+        for (int i = 0; i < editMenuItems.length; i++) {
+            if (i != 2)
+                editMenuItems[i].setEnabled(false);
+            edit.add(editMenuItems[i]);
+        }
+
+        editMenuItems[0].addActionListener(e -> {
+            copyText(textArea.getSelectedText());
+            textArea.replaceSelection("");
+        });
+
+        editMenuItems[1].addActionListener(e -> {
+            copyText(textArea.getSelectedText());
+        });
+
+        editMenuItems[2].addActionListener(e -> {
+            textArea.paste();
+        });
+
+        editMenuItems[3].addActionListener(e -> {
+            textArea.replaceSelection("");
+        });
+
         return edit;
+    }
+
+    private void copyText(String selectedText) {
+        StringSelection selection = new StringSelection(selectedText);
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        clipboard.setContents(selection, selection);
     }
 
     private JMenu makeFormatMenu() {
@@ -141,26 +198,25 @@ public class notepadFrame extends JFrame {
 
     private void exitOption() {
         if (!changesMade) {
-            dispose();
-            openWindows--;
-            if (openWindows == 0)
-                System.exit(0);
-        }
-        int confirmed = showSaveDialogue();
+            closeWindow();
+        } else {
+            int confirmed = showSaveDialogue();
 
-        if (confirmed == 0) {
-            if (optionSave()) {
-                dispose();
-                openWindows--;
-                if (openWindows == 0)
-                    System.exit(0);
+            if (confirmed == 0) {
+                if (optionSave()) {
+                    closeWindow();
+                }
+            } else if (confirmed == 1) {
+                closeWindow();
             }
-        } else if (confirmed == 1) {
-            dispose();
-            openWindows--;
-            if (openWindows == 0)
-                System.exit(0);
         }
+    }
+
+    private void closeWindow() {
+        dispose();
+        openWindows--;
+        if (openWindows == 0)
+            System.exit(0);
     }
 
     private int showSaveDialogue() {
@@ -197,20 +253,21 @@ public class notepadFrame extends JFrame {
 
             if (confirmed == 0) {
                 if (optionSave()) {
-                    textArea.setText(readTextFile(path));
-                    this.path = path;
-                    changesMade = false;
-                    setTitle(fileName);
+                    openWindow(path, fileName);
                 }
             } else if (confirmed == 1) {
-                textArea.setText(readTextFile(path));
-                this.path = path;
-                changesMade = false;
-                setTitle(fileName);
+                openWindow(path, fileName);
             }
+        } else {
+            openWindow(path, fileName);
         }
+    }
 
-
+    private void openWindow(String path, String fileName) {
+        textArea.setText(readTextFile(path));
+        this.path = path;
+        changesMade = false;
+        setTitle(fileName);
     }
 
     private String readTextFile(String path) {
@@ -250,37 +307,7 @@ public class notepadFrame extends JFrame {
             }
 
             File file = new File(fileChooserPath);
-            /*
-            outerLoop:
-            while (checkFilesInDirectory(file, fileName)) {
-                String[] options = {"Yes", "Choose a different name", "Cancel"};
 
-                int choice = JOptionPane.showOptionDialog(notepadFrame.this,
-                        "Text file already exists. Do you want to continue?",
-                        "Text file already exists",
-                        JOptionPane.DEFAULT_OPTION,
-                        JOptionPane.PLAIN_MESSAGE,
-                        null, options, options[0]);
-
-                switch (choice) {
-                    case 0:
-                        break outerLoop;
-                    case 1:
-                        fileName = fileNameChooser();
-
-                        if (fileName == null || fileName.equals("/.txt")) {
-                            JOptionPane.showMessageDialog(notepadFrame.this,
-                                    "You did not enter a name for your file!",
-                                    "File Not Saved!",
-                                    JOptionPane.ERROR_MESSAGE);
-                            return false;
-                        }
-                        break;
-                    default:
-                        return false;
-                }
-            }
-*/
             FileWriter writer = new FileWriter(fileChooserPath + fileName);
             writer.write(textArea.getText());
             this.path = fileChooserPath + fileName;
@@ -293,7 +320,7 @@ public class notepadFrame extends JFrame {
                     "Error!", JOptionPane.ERROR_MESSAGE);
             return false;
         }
-        setTitle(fileName.substring(1, fileName.length() - 4));
+        setTitle(fileName.substring(1));
         return true;
     }
 
@@ -333,9 +360,14 @@ public class notepadFrame extends JFrame {
             FileWriter writer = new FileWriter(path);
             writer.write(textArea.getText());
             writer.close();
+            if (changesMade) {
+                setTitle(getTitle().substring(0, getTitle().length() - 1));
+                changesMade = false;
+            }
         } catch (IOException e) {
             return false;
         }
+
         return true;
     }
 
