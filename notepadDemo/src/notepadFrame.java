@@ -3,13 +3,14 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.event.*;
 import java.io.*;
 
+
 public class notepadFrame extends JFrame {
     private final JTextArea textArea;
     private String path = null;
     boolean changesMade = false;
     private static int openWindows = 0;
 
-    public notepadFrame() {
+    public notepadFrame(String text) {
         super("Notepad");
 
         openWindows++;
@@ -21,6 +22,7 @@ public class notepadFrame extends JFrame {
         textArea.setLineWrap(true);
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
+        textArea.setText(text);
 
         textArea.addKeyListener(new KeyAdapter() {
             @Override
@@ -34,47 +36,30 @@ public class notepadFrame extends JFrame {
 
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
-                if (!changesMade) {
-                    dispose();
-                    openWindows--;
-                    if (openWindows == 0)
-                        System.exit(0);
-                    return;
-                }
-                String[] options = {"Save", "Don't save", "Cancel"};
-                int confirmed = JOptionPane.showOptionDialog(notepadFrame.this,
-                        "Save the changes?",
-                        "Exit...",
-                        JOptionPane.DEFAULT_OPTION,
-                        JOptionPane.QUESTION_MESSAGE,
-                        null, options, options[0]
-                );
-
-                if (confirmed == 0) {
-                    if (optionSave()) {
-                        dispose();
-                        openWindows--;
-                        if (openWindows == 0)
-                            System.exit(0);
-                    }
-                } else if (confirmed == 1) {
-                    dispose();
-                    openWindows--;
-                    if (openWindows == 0)
-                        System.exit(0);
-                }
+                exitOption();
             }
         });
 
+        makeMenu();
+
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        add(scrollPane);
+
+    }
+
+    private void makeMenu(){
         JMenuBar menuBar = new JMenuBar();
+        menuBar.add(makeFileMenu());
+        menuBar.add(makeEditMenu());
+        menuBar.add(makeFormatMenu());
+
+        setJMenuBar(menuBar);
+    }
+
+    private JMenu makeFileMenu(){
         JMenu file = new JMenu("File");
-        JMenu edit = new JMenu("Edit");
-        JMenu format = new JMenu("Format");
-        JMenu help = new JMenu("Help");
-        menuBar.add(file);
-        menuBar.add(edit);
-        menuBar.add(format);
-        menuBar.add(help);
 
         JMenuItem itemNew = new JMenuItem("New");
         JMenuItem itemNewWindow = new JMenuItem("New Window");
@@ -139,11 +124,19 @@ public class notepadFrame extends JFrame {
             }
         });
 
-        JScrollPane scrollPane = new JScrollPane(textArea);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        add(scrollPane);
-        setJMenuBar(menuBar);
+        return file;
+    }
+
+    private JMenu makeEditMenu(){
+        JMenu edit = new JMenu("Edit");
+
+        return edit;
+    }
+
+    private JMenu makeFormatMenu(){
+        JMenu format = new JMenu("Format");
+
+        return format;
     }
 
     private void exitOption() {
@@ -153,6 +146,10 @@ public class notepadFrame extends JFrame {
             if (openWindows == 0)
                 System.exit(0);
         }
+        showSaveDialogue();
+    }
+
+    private void showSaveDialogue(){
         String[] options = {"Save", "Don't save", "Cancel"};
         int confirmed = JOptionPane.showOptionDialog(notepadFrame.this,
                 "Save the changes?",
@@ -195,15 +192,32 @@ public class notepadFrame extends JFrame {
                 return;
             }
         }
+        String path = "";
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setCurrentDirectory(new File("C:/Users/alita/Desktop"));
+        fileChooser.setCurrentDirectory(new File("C:/Users/"));
         fileChooser.setDialogTitle("Select a folder...");
         fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         FileNameExtensionFilter filter =
                 new FileNameExtensionFilter("TEXT FILES", "txt", "text");
         fileChooser.setFileFilter(filter);
-        fileChooser.showOpenDialog(null);
 
+        if(fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION){
+            path = fileChooser.getSelectedFile().getAbsolutePath();
+
+            try {
+                BufferedReader br = new BufferedReader(new FileReader(path));
+                String line;
+                StringBuilder stringBuilder = new StringBuilder();
+                while ((line = br.readLine()) != null) {
+                    stringBuilder.append(line).append("\n");
+                    if(changesMade){
+
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
     }
 
@@ -321,7 +335,7 @@ public class notepadFrame extends JFrame {
     }
 
     public void newWindowOption() {
-        notepadFrame frame = new notepadFrame();
+        notepadFrame frame = new notepadFrame("");
         frame.setVisible(true);
         frame.pack();
     }
