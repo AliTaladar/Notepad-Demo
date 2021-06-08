@@ -27,7 +27,7 @@ public class notepadFrame extends JFrame {
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 
-        textArea = new JTextArea(26, 95);
+        textArea = new JTextArea(18, 50);
         textArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         textArea.setLineWrap(true);
         textArea.setLineWrap(true);
@@ -218,13 +218,14 @@ public class notepadFrame extends JFrame {
     }
 
     private void openFormatter(){
-        textFormatter formatter = new textFormatter();
+        textFormatter formatter = new textFormatter(this);
         formatter.setVisible(true);
         formatter.pack();
         formatter.setLocationRelativeTo(null);
     }
 
-    public void changeFont(Font font){
+    public void changeFont(String fontName, int fontStyle, int fontSize){
+        Font font = new Font(fontName, fontStyle, fontSize);
         textArea.setFont(font);
     }
 
