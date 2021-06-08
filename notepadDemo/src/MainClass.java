@@ -17,7 +17,7 @@ public class MainClass {
         ImageIcon imageIcon = new ImageIcon("Notepad_Logo.png");
 
         notepadFrame frame = new notepadFrame("");
-//        frame.setIconImage(imageIcon.getImage());
+        frame.setIconImage(imageIcon.getImage());
         frame.setVisible(true);
         frame.pack();
         frame.setLocationRelativeTo(null);

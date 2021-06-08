@@ -1,6 +1,4 @@
 import javax.swing.*;
-import javax.swing.event.CaretEvent;
-import javax.swing.event.CaretListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -12,21 +10,45 @@ import java.time.format.DateTimeFormatter;
 
 
 public class notepadFrame extends JFrame {
-    private final JTextArea textArea;
+    private JTextArea textArea;
     private String path = null;
     boolean changesMade = false;
     private static int openWindows = 0;
 
-    private JMenuItem[] editMenuItems = {new JMenuItem("Cut"), new JMenuItem("Copy"),
+    private final JMenuItem[] editMenuItems = {new JMenuItem("Cut"), new JMenuItem("Copy"),
             new JMenuItem("Paste"), new JMenuItem("Delete")};
 
+    /**
+     * @param text argument passed to the function makeTextArea()
+     */
     public notepadFrame(String text) {
         super("Notepad Demo");
 
         openWindows++;
-
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                exitOption();
+            }
+        });
 
+
+        makeTextArea(text);
+        makeMenu();
+
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        add(scrollPane);
+
+    }
+
+    /**
+     * Initializes the JTextArea and adds attributes to it
+     *
+     * @param text the initial text in the text area
+     */
+    private void makeTextArea(String text) {
         textArea = new JTextArea(22, 65);
         textArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         textArea.setLineWrap(true);
@@ -46,41 +68,27 @@ public class notepadFrame extends JFrame {
             }
         });
 
-        textArea.addCaretListener(new CaretListener() {
-            @Override
-            public void caretUpdate(CaretEvent e) {
-                int length = textArea.getSelectionEnd() - textArea.getSelectionStart();
-                if (length > 0) {
+        textArea.addCaretListener(e -> {
+            int length = textArea.getSelectionEnd() - textArea.getSelectionStart();
+            if (length > 0) {
+                for (int i = 0; i < editMenuItems.length; i++) {
+                    if (i != 2)
+                        editMenuItems[i].setEnabled(true);
+                }
+            } else {
+                if (editMenuItems[0].isEnabled()) {
                     for (int i = 0; i < editMenuItems.length; i++) {
                         if (i != 2)
-                            editMenuItems[i].setEnabled(true);
-                    }
-                } else {
-                    if (editMenuItems[0].isEnabled()) {
-                        for (int i = 0; i < editMenuItems.length; i++) {
-                            if (i != 2)
-                                editMenuItems[i].setEnabled(false);
-                        }
+                            editMenuItems[i].setEnabled(false);
                     }
                 }
             }
         });
-
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                exitOption();
-            }
-        });
-
-        makeMenu();
-
-        JScrollPane scrollPane = new JScrollPane(textArea);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        add(scrollPane);
-
     }
 
+    /**
+     * Makes the main JMenuBar
+     */
     private void makeMenu() {
         JMenuBar menuBar = new JMenuBar();
         menuBar.add(makeFileMenu());
@@ -90,6 +98,11 @@ public class notepadFrame extends JFrame {
         setJMenuBar(menuBar);
     }
 
+    /**
+     * Makes the file menu with all its items
+     *
+     * @return file menu
+     */
     private JMenu makeFileMenu() {
         JMenu file = new JMenu("File");
 
@@ -109,54 +122,31 @@ public class notepadFrame extends JFrame {
         file.addSeparator();
         file.add(itemExit);
 
-        itemExit.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                exitOption();
-            }
-        });
+        itemExit.addActionListener(e -> exitOption());
 
-        itemOpen.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                openOption();
-            }
-        });
+        itemOpen.addActionListener(e -> openOption());
 
-        itemNew.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                newOption();
-            }
-        });
+        itemNew.addActionListener(e -> newOption());
 
-        itemNewWindow.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                newWindowOption();
-            }
-        });
+        itemNewWindow.addActionListener(e -> newWindowOption());
 
 
-        itemSave.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                optionSave();
-            }
-        });
+        itemSave.addActionListener(e -> optionSave());
 
-        itemSaveAs.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (optionSaveAs()) {
-                    changesMade = false;
-                }
+        itemSaveAs.addActionListener(e -> {
+            if (optionSaveAs()) {
+                changesMade = false;
             }
         });
 
         return file;
     }
 
+    /**
+     * Makes the edit menu with all its items
+     *
+     * @return edit menu
+     */
     private JMenu makeEditMenu() {
         JMenu edit = new JMenu("Edit");
 
@@ -171,51 +161,43 @@ public class notepadFrame extends JFrame {
             textArea.replaceSelection("");
         });
 
-        editMenuItems[1].addActionListener(e -> {
-            copyText(textArea.getSelectedText());
-        });
+        editMenuItems[1].addActionListener(e -> copyText(textArea.getSelectedText()));
 
-        editMenuItems[2].addActionListener(e -> {
-            textArea.paste();
-        });
+        editMenuItems[2].addActionListener(e -> textArea.paste());
 
-        editMenuItems[3].addActionListener(e -> {
-            textArea.replaceSelection("");
-        });
+        editMenuItems[3].addActionListener(e -> textArea.replaceSelection(""));
 
         edit.addSeparator();
 
         JMenuItem timeDateItem = new JMenuItem("Time/Date");
 
-        timeDateItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                pasteTimeDate();
-            }
-        });
+        timeDateItem.addActionListener(e -> pasteTimeDate());
 
         edit.add(timeDateItem);
 
         return edit;
     }
 
+    /**
+     * Makes the format menu with all its items
+     *
+     * @return format menu
+     */
     private JMenu makeFormatMenu() {
         JMenu format = new JMenu("Format");
 
         JMenuItem font = new JMenuItem("Font...");
 
-        font.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                openFormatter();
-            }
-        });
+        font.addActionListener(e -> openFormatter());
 
         format.add(font);
 
         return format;
     }
 
+    /**
+     * opens the formatter dialog
+     */
     private void openFormatter() {
         System.out.println(textArea.getFont().getSize());
         textFormatter formatter = new textFormatter(this, textArea.getFont().getName(),
@@ -225,6 +207,12 @@ public class notepadFrame extends JFrame {
         formatter.setLocationRelativeTo(null);
     }
 
+    /**
+     * Changes the font of the the text area
+     * @param fontName the name of the font in the computer
+     * @param fontStyle the integer representing the style of the font (Regular, Bold, Italic, Bold Italic)
+     * @param fontSize the integer representing the size of the font
+     */
     public void changeFont(String fontName, int fontStyle, int fontSize) {
         Font font = new Font(fontName, fontStyle, fontSize);
         textArea.setFont(font);
@@ -232,24 +220,33 @@ public class notepadFrame extends JFrame {
 
     }
 
+    /**
+     * Pastes the dateTime on the text area
+     */
     private void pasteTimeDate() {
         LocalDateTime localDateTime = LocalDateTime.now();
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("h:m a YYYY-MM-dd");
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("h:m a yyyy-MM-dd");
         textArea.setText(textArea.getText() + dtf.format(localDateTime));
     }
 
+    /**
+     * Copies the selected text to the clipboard
+     * @param selectedText the highlighted text
+     */
     private void copyText(String selectedText) {
         StringSelection selection = new StringSelection(selectedText);
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         clipboard.setContents(selection, selection);
     }
 
-
+    /**
+     * Exits the program
+     */
     private void exitOption() {
         if (!changesMade) {
             closeWindow();
         } else {
-            int confirmed = showSaveDialogue();
+            int confirmed = showSaveDialog();
 
             if (confirmed == 0) {
                 if (optionSave()) {
@@ -261,6 +258,10 @@ public class notepadFrame extends JFrame {
         }
     }
 
+    /**
+     * Closes the window
+     * This method does not necessarily terminate the program
+     */
     private void closeWindow() {
         dispose();
         openWindows--;
@@ -268,7 +269,11 @@ public class notepadFrame extends JFrame {
             System.exit(0);
     }
 
-    private int showSaveDialogue() {
+    /**
+     * Shows the save pop-up dialog
+     * @return the option chosen by the user
+     */
+    private int showSaveDialog() {
         String[] options = {"Save", "Don't save", "Cancel"};
         return JOptionPane.showOptionDialog(notepadFrame.this,
                 "Save the changes?",
@@ -279,6 +284,9 @@ public class notepadFrame extends JFrame {
         );
     }
 
+    /**
+     * Allows to open a text file on the computer
+     */
     private void openOption() {
 
 
@@ -296,7 +304,7 @@ public class notepadFrame extends JFrame {
         String fileName = fileChooser.getSelectedFile().getName();
 
         if (changesMade) {
-            int confirmed = showSaveDialogue();
+            int confirmed = showSaveDialog();
 
             if (confirmed == 0) {
                 if (optionSave()) {
@@ -310,6 +318,11 @@ public class notepadFrame extends JFrame {
         }
     }
 
+    /**
+     * "opens" the window of the new text file
+     * @param path The path to the opened text file
+     * @param fileName the name of the text file
+     */
     private void openWindow(String path, String fileName) {
         textArea.setText(readTextFile(path));
         this.path = path;
@@ -317,6 +330,11 @@ public class notepadFrame extends JFrame {
         setTitle(fileName);
     }
 
+    /**
+     * reads a text file given its path
+     * @param path the path to the text file
+     * @return a string containing the text inside the text file
+     */
     private String readTextFile(String path) {
         String line;
         StringBuilder stringBuilder = new StringBuilder();
@@ -332,6 +350,10 @@ public class notepadFrame extends JFrame {
         return stringBuilder.toString();
     }
 
+    /**
+     * Allows to save a file in a specific location in the computer
+     * @return a boolean showing whether or not the file has been saved
+     */
     private boolean optionSaveAs() {
         String fileName;
         try {
@@ -353,8 +375,6 @@ public class notepadFrame extends JFrame {
                 return false;
             }
 
-            File file = new File(fileChooserPath);
-
             FileWriter writer = new FileWriter(fileChooserPath + fileName);
             writer.write(textArea.getText());
             this.path = fileChooserPath + fileName;
@@ -371,15 +391,10 @@ public class notepadFrame extends JFrame {
         return true;
     }
 
-    private boolean checkFilesInDirectory(File file, String fileName) {
-        fileName = fileName.substring(1);
-        String[] contents = file.list();
-        for (String content : contents) {
-            if (content.equals(fileName)) return true;
-        }
-        return false;
-    }
-
+    /**
+     * Allows the user to choose a name for their text file
+     * @return the string containing the name of the text file with its extension
+     */
     private String fileNameChooser() {
         try {
             Object fileName = JOptionPane.showInputDialog(notepadFrame.this,
@@ -395,6 +410,10 @@ public class notepadFrame extends JFrame {
 
     }
 
+    /**
+     * Allows to save a file
+     * @return a boolean showing whether or not the file has been saved
+     */
     private boolean optionSave() {
         if (path == null) {
             boolean saveConfirmation = optionSaveAs();
@@ -418,12 +437,20 @@ public class notepadFrame extends JFrame {
         return true;
     }
 
+    /**
+     * Opens a new window
+     * This method does not close the previous window
+     */
     public void newWindowOption() {
         notepadFrame frame = new notepadFrame("");
         frame.setVisible(true);
         frame.pack();
     }
 
+    /**
+     * Clears the current window
+     * Asks the user if they want to save the changes (if applicable)
+     */
     public void newOption() {
         if (!changesMade) {
             textArea.setText("");

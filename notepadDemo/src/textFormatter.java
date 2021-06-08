@@ -27,6 +27,13 @@ public class textFormatter extends JDialog {
 
     private final notepadFrame parent;
 
+    /**
+     * The constructor
+     * @param parent the parent window of the dialog
+     * @param currentFontName The current font name used in the text area
+     * @param currentFontStyle The current font style used in the text area
+     * @param currentFontSize The current font size used in the text area
+     */
     public textFormatter(notepadFrame parent, String currentFontName,
                          int currentFontStyle, int currentFontSize) {
         this.parent = parent;
@@ -49,6 +56,9 @@ public class textFormatter extends JDialog {
         pack();
     }
 
+    /**
+     * Makes the font JList
+     */
     private void makefontJList() {
         fontListPanel = new JPanel();
         fontJList = new JList<>(fonts);
@@ -66,6 +76,9 @@ public class textFormatter extends JDialog {
         }
     }
 
+    /**
+     * Makes the style JList
+     */
     private void makestyleJList() {
 
         String[] styles = {"Regular", "Bold", "Italic", "Bold Italic"};
@@ -79,7 +92,9 @@ public class textFormatter extends JDialog {
         stylePanel.setBorder(panelPadding);
     }
 
-
+    /**
+     * Makes the size JList
+     */
     private void makeSizeJList() {
         sizePanel = new JPanel();
 
@@ -100,6 +115,9 @@ public class textFormatter extends JDialog {
         }
     }
 
+    /**
+     * Makes the save button and adds an action listener to it
+     */
     private void makeSaveButton() {
         saveButton = new JButton("SAVE CHANGES");
         saveButtonPanel = new JPanel();
@@ -118,6 +136,11 @@ public class textFormatter extends JDialog {
         });
     }
 
+    /**
+     * finds the index of the current font name in the fonts array
+     * @param target the current font name
+     * @return the index of the current font name in the fonts array
+     */
     private int searchCurrentFontName(String target){
         int start = 0;
         int end = fonts.length - 1;
@@ -139,6 +162,11 @@ public class textFormatter extends JDialog {
         return -1;
     }
 
+    /**
+     * finds the index of the current font size in the sizeArray
+     * @param target the integer of the current font size
+     * @return the index of the current font size in the sizeArray
+     */
     private int searchCurrentFontSize(int target){
         int start = 0;
         int end = sizeArray.length - 1;
