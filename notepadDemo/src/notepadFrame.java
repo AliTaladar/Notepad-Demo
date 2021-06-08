@@ -16,6 +16,7 @@ public class notepadFrame extends JFrame {
     private String path = null;
     boolean changesMade = false;
     private static int openWindows = 0;
+
     private JMenuItem[] editMenuItems = {new JMenuItem("Cut"), new JMenuItem("Copy"),
             new JMenuItem("Paste"), new JMenuItem("Delete")};
 
@@ -199,7 +200,35 @@ public class notepadFrame extends JFrame {
         return edit;
     }
 
-    private void pasteTimeDate(){
+    private JMenu makeFormatMenu() {
+        JMenu format = new JMenu("Format");
+
+        JMenuItem font = new JMenuItem("Font...");
+
+        font.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                openFormatter();
+            }
+        });
+
+        format.add(font);
+
+        return format;
+    }
+
+    private void openFormatter(){
+        textFormatter formatter = new textFormatter();
+        formatter.setVisible(true);
+        formatter.pack();
+        formatter.setLocationRelativeTo(null);
+    }
+
+    public void changeFont(Font font){
+        textArea.setFont(font);
+    }
+
+    private void pasteTimeDate() {
         LocalDateTime localDateTime = LocalDateTime.now();
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("h:m a YYYY-MM-dd");
         textArea.setText(textArea.getText() + dtf.format(localDateTime));
@@ -211,11 +240,6 @@ public class notepadFrame extends JFrame {
         clipboard.setContents(selection, selection);
     }
 
-    private JMenu makeFormatMenu() {
-        JMenu format = new JMenu("Format");
-
-        return format;
-    }
 
     private void exitOption() {
         if (!changesMade) {
