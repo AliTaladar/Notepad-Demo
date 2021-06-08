@@ -1,11 +1,8 @@
 import javax.swing.*;
 import javax.swing.border.Border;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Arrays;
 
 public class textFormatter extends JDialog {
     private final String[] fonts =
@@ -24,12 +21,19 @@ public class textFormatter extends JDialog {
     private JButton saveButton;
     private JPanel saveButtonPanel;
 
-    private notepadFrame parent;
+    private final String currentFontName;
+    private final int currentFontStyle;
+    private final int currentFontSize;
 
-    public textFormatter(notepadFrame parent) {
+    private final notepadFrame parent;
+
+    public textFormatter(notepadFrame parent, String currentFontName,
+                         int currentFontStyle, int currentFontSize) {
         this.parent = parent;
+        this.currentFontName = currentFontName;
+        this.currentFontStyle = currentFontStyle;
+        this.currentFontSize = currentFontSize;
 
-        setModal(true);
         setTitle("Font");
         setLayout(new BorderLayout());
 
@@ -48,18 +52,18 @@ public class textFormatter extends JDialog {
     private void makefontJList() {
         fontListPanel = new JPanel();
         fontJList = new JList<>(fonts);
-        fontJList.setSelectedIndex(0);
         fontJList.setVisibleRowCount(8);
         fontJList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         fontListPanel.add(new JScrollPane(fontJList));
         fontListPanel.setBorder(panelPadding);
 
-//        fontJList.addListSelectionListener(new ListSelectionListener() {
-//            @Override
-//            public void valueChanged(ListSelectionEvent e) {
-//                System.out.println(fonts[fontJList.getSelectedIndex()]);
-//            }
-//        });
+        int currentFontNameIndex = searchCurrentFontName(currentFontName);
+
+        if (currentFontNameIndex == -1) {
+            fontJList.setSelectedIndex(0);
+        } else {
+            fontJList.setSelectedIndex(currentFontNameIndex);
+        }
     }
 
     private void makestyleJList() {
@@ -67,7 +71,7 @@ public class textFormatter extends JDialog {
         String[] styles = {"Regular", "Bold", "Italic", "Bold Italic"};
         stylePanel = new JPanel();
         styleJList = new JList<>(styles);
-        styleJList.setSelectedIndex(0);
+        styleJList.setSelectedIndex(currentFontStyle);
         styleJList.setVisibleRowCount(8);
         styleJList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         styleJList.setBorder(JListPadding);
@@ -80,12 +84,20 @@ public class textFormatter extends JDialog {
         sizePanel = new JPanel();
 
         sizeJList = new JList<>(sizeArray);
-        sizeJList.setSelectedIndex(0);
+        sizeJList.setSelectedIndex(currentFontSize);
         sizeJList.setVisibleRowCount(8);
         sizeJList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         sizeJList.setBorder(JListPadding);
         sizePanel.add(new JScrollPane(sizeJList));
         sizePanel.setBorder(panelPadding);
+
+        int currentFontSizeIndex = searchCurrentFontSize(currentFontSize);
+
+        if (currentFontSizeIndex == -1) {
+            sizeJList.setSelectedIndex(0);
+        } else {
+            sizeJList.setSelectedIndex(currentFontSizeIndex);
+        }
     }
 
     private void makeSaveButton() {
@@ -102,6 +114,47 @@ public class textFormatter extends JDialog {
                 parent.changeFont(fonts[fontJList.getSelectedIndex()], styleJList.getSelectedIndex(),
                         Integer.parseInt(sizeArray[sizeJList.getSelectedIndex()]));
             }
+
         });
+    }
+
+    private int searchCurrentFontName(String target){
+        int start = 0;
+        int end = fonts.length - 1;
+
+        while(start <= end){
+            int middle = (start + end) / 2;
+
+            int result = target.compareTo(fonts[middle]);
+
+            if(result == 0){
+                return middle;
+            }else if(result > 0){
+                start = middle + 1;
+            }else{
+                end = middle - 1;
+            }
+        }
+
+        return -1;
+    }
+
+    private int searchCurrentFontSize(int target){
+        int start = 0;
+        int end = sizeArray.length - 1;
+
+        while(start <= end){
+            int middle = (start + end) / 2;
+
+            if(target == Integer.parseInt(sizeArray[middle])){
+                return middle;
+            }else if(target > Integer.parseInt(sizeArray[middle])){
+                start = middle + 1;
+            }else{
+                end = middle - 1;
+            }
+        }
+
+        return -1;
     }
 }

@@ -21,18 +21,19 @@ public class notepadFrame extends JFrame {
             new JMenuItem("Paste"), new JMenuItem("Delete")};
 
     public notepadFrame(String text) {
-        super("Notepad");
+        super("Notepad Demo");
 
         openWindows++;
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 
-        textArea = new JTextArea(18, 50);
+        textArea = new JTextArea(22, 65);
         textArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         textArea.setLineWrap(true);
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
         textArea.setText(text);
+        textArea.setFont(new Font("Times New Roman", Font.PLAIN, 12));
 
 
         textArea.addKeyListener(new KeyAdapter() {
@@ -97,16 +98,14 @@ public class notepadFrame extends JFrame {
         JMenuItem itemOpen = new JMenuItem("Open...");
         JMenuItem itemSave = new JMenuItem("Save");
         JMenuItem itemSaveAs = new JMenuItem("Save As...");
-        JMenuItem itemPrint = new JMenuItem("Print");
         JMenuItem itemExit = new JMenuItem("Exit");
 
         file.add(itemNew);
         file.add(itemNewWindow);
         file.add(itemOpen);
+        file.addSeparator();
         file.add(itemSave);
         file.add(itemSaveAs);
-        file.addSeparator();
-        file.add(itemPrint);
         file.addSeparator();
         file.add(itemExit);
 
@@ -217,16 +216,20 @@ public class notepadFrame extends JFrame {
         return format;
     }
 
-    private void openFormatter(){
-        textFormatter formatter = new textFormatter(this);
+    private void openFormatter() {
+        System.out.println(textArea.getFont().getSize());
+        textFormatter formatter = new textFormatter(this, textArea.getFont().getName(),
+                textArea.getFont().getStyle(), textArea.getFont().getSize());
         formatter.setVisible(true);
         formatter.pack();
         formatter.setLocationRelativeTo(null);
     }
 
-    public void changeFont(String fontName, int fontStyle, int fontSize){
+    public void changeFont(String fontName, int fontStyle, int fontSize) {
         Font font = new Font(fontName, fontStyle, fontSize);
         textArea.setFont(font);
+        System.out.println(textArea.getFont().getName());
+
     }
 
     private void pasteTimeDate() {
