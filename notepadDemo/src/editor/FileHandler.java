@@ -54,7 +54,6 @@ public class FileHandler {
     }
 
     public void openFile() {
-        trace("openFile called");
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File("C:/Users/"));
         fileChooser.setDialogTitle("Select a file...");
@@ -79,25 +78,19 @@ public class FileHandler {
                 
                 updateFrameTitle(currentPath);
                 updateStatusBar("File opened successfully");
-                trace("openFile successful - path: " + currentPath);
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(parentFrame,
                         "Error reading file: " + ex.getMessage(),
                         "Error",
                         JOptionPane.ERROR_MESSAGE);
-                trace("openFile failed with error: " + ex.getMessage());
             }
-        } else {
-            trace("openFile cancelled by user");
         }
     }
 
     private boolean writeToFile(String path) {
-        trace("writeToFile called with path: " + path);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
             String text = textArea.getText();
             writer.write(text);
-            trace("writeToFile successful - wrote " + text.length() + " characters");
             updateStatusBar("File saved successfully");
             return true;
         } catch (IOException ex) {
@@ -105,15 +98,12 @@ public class FileHandler {
                     "Error saving file: " + ex.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
-            trace("writeToFile failed with error: " + ex.getMessage());
             return false;
         }
     }
 
     public void autoSave() {
-        trace("autoSave called - currentPath: " + currentPath + ", autoSaveEnabled: " + autoSaveEnabled);
         if (currentPath != null && autoSaveEnabled) {
-            trace("autoSave - saving to: " + currentPath);
             if (writeToFile(currentPath)) {
                 updateStatusBar("Auto-saved");
                 // Remove the "*" from the title since we've saved
@@ -123,25 +113,19 @@ public class FileHandler {
                         parentFrame.setTitle(currentTitle.substring(0, currentTitle.length() - 1));
                     });
                 }
-                trace("autoSave successful");
             } else {
                 autoSaveEnabled = false;
                 updateStatusBar("Auto-save failed");
-                trace("autoSave failed - disabled auto-save");
             }
-        } else {
-            trace("autoSave - conditions not met: currentPath=" + currentPath + ", autoSaveEnabled=" + autoSaveEnabled);
         }
     }
 
     public void setAutoSaveEnabled(boolean enabled) {
-        trace("setAutoSaveEnabled called with: " + enabled + " - currentPath: " + currentPath);
         if (enabled && currentPath == null) {
             // If enabling auto-save but no file exists, we need to save first
             if (!saveFileAs()) {
                 enabled = false;
                 updateStatusBar("Auto-save cancelled - No save location");
-                trace("setAutoSaveEnabled failed - no save location selected");
                 return;
             }
         }
@@ -149,16 +133,13 @@ public class FileHandler {
         
         // If enabling auto-save, do an immediate save
         if (enabled) {
-            trace("setAutoSaveEnabled - doing immediate save");
             autoSave();
         }
         
         updateStatusBar(enabled ? "Auto-save enabled" : "Auto-save disabled");
-        trace("setAutoSaveEnabled complete - autoSaveEnabled: " + autoSaveEnabled);
     }
 
     public boolean isAutoSaveEnabled() {
-        trace("isAutoSaveEnabled called - returning: " + autoSaveEnabled);
         return autoSaveEnabled;
     }
 
@@ -178,15 +159,6 @@ public class FileHandler {
             Timer timer = new Timer(3000, e -> statusBar.setText(currentStatus));
             timer.setRepeats(false);
             timer.start();
-        }
-    }
-
-    private void trace(String message) {
-        try (FileWriter fw = new FileWriter("notepadDemo/trace.txt", true)) {
-            String timestamp = LocalDateTime.now().toString();
-            fw.write(timestamp + " - [FileHandler] " + message + "\n");
-        } catch (IOException e) {
-            // Ignore trace errors
         }
     }
 }

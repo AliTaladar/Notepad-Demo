@@ -65,19 +65,16 @@ public class notepadFrame extends JFrame {
 
             public void insertUpdate(javax.swing.event.DocumentEvent e) { 
                 if (!isInternalChange) {
-                    trace("insertUpdate event received - offset: " + e.getOffset() + ", length: " + e.getLength());
                     textChanged(); 
                 }
             }
             public void removeUpdate(javax.swing.event.DocumentEvent e) { 
                 if (!isInternalChange) {
-                    trace("removeUpdate event received - offset: " + e.getOffset() + ", length: " + e.getLength());
                     textChanged(); 
                 }
             }
             public void changedUpdate(javax.swing.event.DocumentEvent e) { 
                 if (!isInternalChange) {
-                    trace("changedUpdate event received");
                     textChanged(); 
                 }
             }
@@ -105,20 +102,12 @@ public class notepadFrame extends JFrame {
     }
 
     private void textChanged() {
-        trace("textChanged called - current title: " + getTitle());
-        trace("textChanged - autoSaveEnabled: " + fileHandler.isAutoSaveEnabled());
-        trace("textChanged - document text length: " + textArea.getText().length());
-
         if (!getTitle().endsWith("*")) {
             setTitle(getTitle() + "*");
-            trace("textChanged - added * to title: " + getTitle());
         }
         
         if (fileHandler.isAutoSaveEnabled()) {
-            trace("textChanged - calling autoSave");
             fileHandler.autoSave();
-        } else {
-            trace("textChanged - autoSave not enabled, skipping save");
         }
         
         textEditor.updateStatistics();
@@ -159,14 +148,11 @@ public class notepadFrame extends JFrame {
 
         // Set up auto-save
         autoSaveItem.addActionListener(e -> {
-            trace("autoSaveItem clicked - selected: " + autoSaveItem.isSelected());
             boolean selected = autoSaveItem.isSelected();
             
             if (selected && fileHandler.getCurrentPath() == null) {
                 // If auto-save is enabled but no file is saved, prompt for save location
-                trace("autoSaveItem - no current path, prompting for save location");
                 if (!fileHandler.saveFileAs()) {
-                    trace("autoSaveItem - save cancelled, disabling auto-save");
                     autoSaveItem.setSelected(false);
                     return;
                 }
@@ -175,7 +161,6 @@ public class notepadFrame extends JFrame {
             fileHandler.setAutoSaveEnabled(selected);
             // Re-sync the menu item with FileHandler state
             autoSaveItem.setSelected(fileHandler.isAutoSaveEnabled());
-            trace("autoSaveItem - final state: " + autoSaveItem.isSelected());
         });
 
         // Add action listeners
@@ -304,51 +289,34 @@ public class notepadFrame extends JFrame {
     }
 
     private void exitApplication() {
-        trace("exitApplication called - checking if save needed");
-        // If auto-save is enabled, we can just exit
         if (fileHandler.isAutoSaveEnabled()) {
-            trace("exitApplication - auto-save enabled, exiting without prompt");
             cleanup();
             dispose();
             System.exit(0);
             return;
         }
 
-        // Only show save dialog if there are unsaved changes (indicated by * in title)
+        // Check if there are unsaved changes
         if (getTitle().endsWith("*")) {
-            trace("exitApplication - unsaved changes detected");
             int choice = JOptionPane.showConfirmDialog(
                 this,
                 "Do you want to save changes?",
-                "Save Changes",
+                "Notepad Demo",
                 JOptionPane.YES_NO_CANCEL_OPTION,
-                JOptionPane.QUESTION_MESSAGE);
+                JOptionPane.WARNING_MESSAGE);
 
             if (choice == JOptionPane.YES_OPTION) {
-                trace("exitApplication - user chose to save");
-                if (fileHandler.getCurrentPath() != null) {
-                    if (fileHandler.saveFile()) {
-                        cleanup();
-                        dispose();
-                        System.exit(0);
-                    }
-                } else {
-                    if (fileHandler.saveFileAs()) {
-                        cleanup();
-                        dispose();
-                        System.exit(0);
-                    }
+                if (fileHandler.saveFile()) {
+                    cleanup();
+                    dispose();
+                    System.exit(0);
                 }
             } else if (choice == JOptionPane.NO_OPTION) {
-                trace("exitApplication - user chose not to save");
                 cleanup();
                 dispose();
                 System.exit(0);
             }
-            // If CANCEL, do nothing and return to editor
-            trace("exitApplication - user cancelled exit");
         } else {
-            trace("exitApplication - no unsaved changes, exiting");
             cleanup();
             dispose();
             System.exit(0);
@@ -356,20 +324,9 @@ public class notepadFrame extends JFrame {
     }
 
     private void cleanup() {
-        textEditor.cleanup();
         openWindows--;
         if (openWindows == 0) {
             System.exit(0);
-        }
-        dispose();
-    }
-
-    private void trace(String message) {
-        try (FileWriter fw = new FileWriter("notepadDemo/trace.txt", true)) {
-            String timestamp = java.time.LocalDateTime.now().toString();
-            fw.write(timestamp + " - [notepadFrame] " + message + "\n");
-        } catch (IOException e) {
-            // Ignore trace errors
         }
     }
 
