@@ -16,6 +16,7 @@ public class notepadFrame extends JFrame {
     private static int openWindows = 0;
     private JLabel statusBar;  
     private javax.swing.Timer statsUpdateTimer;  
+    private boolean autoSaveEnabled = false;  
 
     private final JMenuItem[] editMenuItems = {new JMenuItem("Cut"), new JMenuItem("Copy"),
             new JMenuItem("Paste"), new JMenuItem("Delete")};
@@ -75,7 +76,10 @@ public class notepadFrame extends JFrame {
                     changesMade = true;
                     setTitle(getTitle() + "*");
                 }
-                updateStatistics(); // Update statistics on key press
+                updateStatistics(); 
+                if (autoSaveEnabled && path != null) {
+                    autoSave();
+                }
             }
         });
 
@@ -122,6 +126,7 @@ public class notepadFrame extends JFrame {
         JMenuItem itemOpen = new JMenuItem("Open...");
         JMenuItem itemSave = new JMenuItem("Save");
         JMenuItem itemSaveAs = new JMenuItem("Save As...");
+        JCheckBoxMenuItem autoSaveItem = new JCheckBoxMenuItem("Auto-save");
         JMenuItem itemExit = new JMenuItem("Exit");
 
         file.add(itemNew);
@@ -131,7 +136,27 @@ public class notepadFrame extends JFrame {
         file.add(itemSave);
         file.add(itemSaveAs);
         file.addSeparator();
+        file.add(autoSaveItem);
+        file.addSeparator();
         file.add(itemExit);
+
+        // Set initial state and add action listener for auto-save
+        autoSaveItem.setState(autoSaveEnabled);
+        autoSaveItem.addActionListener(e -> {
+            autoSaveEnabled = autoSaveItem.getState();
+            if (autoSaveEnabled && path == null) {
+                // If auto-save is enabled but no file is saved, prompt for save location
+                if (optionSaveAs()) {
+                    updateStatusBar("Auto-save enabled");
+                } else {
+                    autoSaveEnabled = false;
+                    autoSaveItem.setState(false);
+                    updateStatusBar("Auto-save cancelled - No save location");
+                }
+            } else {
+                updateStatusBar(autoSaveEnabled ? "Auto-save enabled" : "Auto-save disabled");
+            }
+        });
 
         itemExit.addActionListener(e -> exitOption());
 
@@ -694,6 +719,40 @@ public class notepadFrame extends JFrame {
                 return index;
             }
             startIndex = index + 1;
+        }
+    }
+
+    /**
+     * Updates the status bar with a temporary message
+     * @param message The message to display
+     */
+    private void updateStatusBar(String message) {
+        // Store current status
+        String currentStatus = statusBar.getText();
+        
+        // Show message
+        statusBar.setText(message);
+        
+        // Restore status after 3 seconds
+        Timer restoreTimer = new Timer(3000, e -> updateStatistics());
+        restoreTimer.setRepeats(false);
+        restoreTimer.start();
+    }
+
+    /**
+     * Performs auto-save operation
+     */
+    private void autoSave() {
+        if (path == null) return;
+        
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
+            writer.write(textArea.getText());
+            changesMade = false;
+            setTitle("Notepad");
+            updateStatusBar("Auto-saved");
+        } catch (IOException ex) {
+            updateStatusBar("Auto-save failed");
+            autoSaveEnabled = false;
         }
     }
 }
