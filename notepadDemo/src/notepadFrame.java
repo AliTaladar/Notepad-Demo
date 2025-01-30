@@ -7,6 +7,7 @@ import java.awt.event.*;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class notepadFrame extends JFrame {
     private JTextArea textArea;
@@ -175,6 +176,13 @@ public class notepadFrame extends JFrame {
         editMenuItems[2].addActionListener(e -> textArea.paste());
 
         editMenuItems[3].addActionListener(e -> textArea.replaceSelection(""));
+
+        edit.addSeparator();
+
+        JMenuItem findReplaceItem = new JMenuItem("Find/Replace");
+        findReplaceItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK));
+        findReplaceItem.addActionListener(e -> showFindReplaceDialog());
+        edit.add(findReplaceItem);
 
         edit.addSeparator();
 
@@ -510,6 +518,182 @@ public class notepadFrame extends JFrame {
         } catch (Exception e) {
             statusBar.setText(String.format("Words: %d  |  Characters: %d  |  Characters (no spaces): %d  |  Lines: %d",
                     words, chars, charsNoSpaces, lines));
+        }
+    }
+
+    /**
+     * Shows the Find/Replace dialog
+     */
+    private void showFindReplaceDialog() {
+        JDialog dialog = new JDialog(this, "Find/Replace", false);
+        dialog.setLayout(new BorderLayout(5, 5));
+        dialog.setResizable(false);
+
+        // Create panels
+        JPanel findPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        JPanel replacePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        JPanel optionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+
+        // Create components
+        JTextField findField = new JTextField(30);
+        JTextField replaceField = new JTextField(30);
+        JCheckBox matchCase = new JCheckBox("Match case");
+        JCheckBox wholeWord = new JCheckBox("Whole word");
+
+        // Add components to panels
+        findPanel.add(new JLabel("Find:"));
+        findPanel.add(findField);
+
+        replacePanel.add(new JLabel("Replace with:"));
+        replacePanel.add(replaceField);
+
+        optionsPanel.add(matchCase);
+        optionsPanel.add(wholeWord);
+
+        // Create buttons
+        JButton findNextBtn = new JButton("Find Next");
+        JButton replaceBtn = new JButton("Replace");
+        JButton replaceAllBtn = new JButton("Replace All");
+        JButton closeBtn = new JButton("Close");
+
+        // Add buttons to panel
+        buttonsPanel.add(findNextBtn);
+        buttonsPanel.add(replaceBtn);
+        buttonsPanel.add(replaceAllBtn);
+        buttonsPanel.add(closeBtn);
+
+        // Add all panels to dialog
+        JPanel centerPanel = new JPanel(new GridLayout(3, 1, 5, 5));
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        centerPanel.add(findPanel);
+        centerPanel.add(replacePanel);
+        centerPanel.add(optionsPanel);
+
+        dialog.add(centerPanel, BorderLayout.CENTER);
+        dialog.add(buttonsPanel, BorderLayout.SOUTH);
+
+        // Add button actions
+        AtomicInteger lastIndex = new AtomicInteger(-1);
+
+        findNextBtn.addActionListener(e -> {
+            String searchText = findField.getText();
+            String content = textArea.getText();
+            
+            if (searchText.isEmpty()) return;
+
+            // Apply case sensitivity
+            if (!matchCase.isSelected()) {
+                searchText = searchText.toLowerCase();
+                content = content.toLowerCase();
+            }
+
+            int startIndex = Math.max(lastIndex.get() + 1, textArea.getCaretPosition());
+            if (startIndex >= content.length() || startIndex < 0) {
+                startIndex = 0;
+            }
+
+            int foundIndex;
+            if (wholeWord.isSelected()) {
+                foundIndex = findWholeWord(content, searchText, startIndex);
+            } else {
+                foundIndex = content.indexOf(searchText, startIndex);
+            }
+
+            if (foundIndex != -1) {
+                textArea.setCaretPosition(foundIndex);
+                textArea.select(foundIndex, foundIndex + findField.getText().length());
+                textArea.requestFocusInWindow();
+                lastIndex.set(foundIndex);
+            } else {
+                lastIndex.set(-1);
+                JOptionPane.showMessageDialog(dialog,
+                        "Cannot find \"" + findField.getText() + "\"",
+                        "Notepad Demo",
+                        JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+
+        replaceBtn.addActionListener(e -> {
+            if (textArea.getSelectedText() != null) {
+                textArea.replaceSelection(replaceField.getText());
+                findNextBtn.doClick(); // Find next occurrence
+            } else {
+                findNextBtn.doClick(); // Find first occurrence
+            }
+        });
+
+        replaceAllBtn.addActionListener(e -> {
+            String searchText = findField.getText();
+            String replaceText = replaceField.getText();
+            String content = textArea.getText();
+            
+            if (searchText.isEmpty()) return;
+
+            int replacements = 0;
+            StringBuilder newContent = new StringBuilder(content);
+            
+            // Reset search position
+            lastIndex.set(-1);
+            
+            while (true) {
+                String searchIn = newContent.toString();
+                if (!matchCase.isSelected()) {
+                    searchIn = searchIn.toLowerCase();
+                    searchText = searchText.toLowerCase();
+                }
+
+                int foundIndex;
+                if (wholeWord.isSelected()) {
+                    foundIndex = findWholeWord(searchIn, searchText, lastIndex.get() + 1);
+                } else {
+                    foundIndex = searchIn.indexOf(searchText, lastIndex.get() + 1);
+                }
+
+                if (foundIndex == -1) break;
+
+                newContent.replace(foundIndex, foundIndex + searchText.length(), replaceText);
+                lastIndex.set(foundIndex + replaceText.length() - 1);
+                replacements++;
+            }
+
+            if (replacements > 0) {
+                textArea.setText(newContent.toString());
+                JOptionPane.showMessageDialog(dialog,
+                        "Replaced " + replacements + " occurrence(s)",
+                        "Notepad Demo",
+                        JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+
+        closeBtn.addActionListener(e -> dialog.dispose());
+
+        // Set dialog properties
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+
+    /**
+     * Finds a whole word in the text
+     * @param content The text to search in
+     * @param word The word to find
+     * @param startIndex The starting index for the search
+     * @return The index of the found word, or -1 if not found
+     */
+    private int findWholeWord(String content, String word, int startIndex) {
+        while (true) {
+            int index = content.indexOf(word, startIndex);
+            if (index == -1) return -1;
+
+            boolean startValid = index == 0 || !Character.isLetterOrDigit(content.charAt(index - 1));
+            boolean endValid = index + word.length() >= content.length() || 
+                             !Character.isLetterOrDigit(content.charAt(index + word.length()));
+
+            if (startValid && endValid) {
+                return index;
+            }
+            startIndex = index + 1;
         }
     }
 }
