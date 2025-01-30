@@ -8,12 +8,13 @@ import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-
 public class notepadFrame extends JFrame {
     private JTextArea textArea;
     private String path = null;
     boolean changesMade = false;
     private static int openWindows = 0;
+    private JLabel statusBar;  
+    private javax.swing.Timer statsUpdateTimer;  
 
     private final JMenuItem[] editMenuItems = {new JMenuItem("Cut"), new JMenuItem("Copy"),
             new JMenuItem("Paste"), new JMenuItem("Delete")};
@@ -32,7 +33,6 @@ public class notepadFrame extends JFrame {
             }
         });
 
-
         makeTextArea(text);
         makeMenu();
 
@@ -41,6 +41,17 @@ public class notepadFrame extends JFrame {
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         add(scrollPane);
 
+        // Create and add status bar
+        statusBar = new JLabel();
+        statusBar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY),
+                BorderFactory.createEmptyBorder(3, 5, 3, 5)
+        ));
+        add(statusBar, BorderLayout.SOUTH);
+
+        // Initialize timer to update statistics every 1000 milliseconds
+        statsUpdateTimer = new javax.swing.Timer(1000, e -> updateStatistics());
+        statsUpdateTimer.start();
     }
 
     /**
@@ -52,11 +63,9 @@ public class notepadFrame extends JFrame {
         textArea = new JTextArea(22, 65);
         textArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         textArea.setLineWrap(true);
-        textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
         textArea.setText(text);
         textArea.setFont(new Font("Times New Roman", Font.PLAIN, 12));
-
 
         textArea.addKeyListener(new KeyAdapter() {
             @Override
@@ -65,6 +74,7 @@ public class notepadFrame extends JFrame {
                     changesMade = true;
                     setTitle(getTitle() + "*");
                 }
+                updateStatistics(); // Update statistics on key press
             }
         });
 
@@ -129,7 +139,6 @@ public class notepadFrame extends JFrame {
         itemNew.addActionListener(e -> newOption());
 
         itemNewWindow.addActionListener(e -> newWindowOption());
-
 
         itemSave.addActionListener(e -> optionSave());
 
@@ -244,29 +253,32 @@ public class notepadFrame extends JFrame {
      */
     private void exitOption() {
         if (!changesMade) {
-            closeWindow();
+            cleanup();
         } else {
             int confirmed = showSaveDialog();
 
             if (confirmed == 0) {
                 if (optionSave()) {
-                    closeWindow();
+                    cleanup();
                 }
             } else if (confirmed == 1) {
-                closeWindow();
+                cleanup();
             }
         }
     }
 
     /**
-     * Closes the window
-     * This method does not necessarily terminate the program
+     * Cleanup resources when closing the window
      */
-    private void closeWindow() {
-        dispose();
+    private void cleanup() {
+        if (statsUpdateTimer != null) {
+            statsUpdateTimer.stop();
+        }
         openWindows--;
-        if (openWindows == 0)
+        if (openWindows == 0) {
             System.exit(0);
+        }
+        dispose();
     }
 
     /**
@@ -288,8 +300,6 @@ public class notepadFrame extends JFrame {
      * Allows to open a text file on the computer
      */
     private void openOption() {
-
-
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File("C:/Users/"));
         fileChooser.setDialogTitle("Select a folder...");
@@ -477,6 +487,29 @@ public class notepadFrame extends JFrame {
             textArea.setText("");
             changesMade = false;
             setTitle("Notepad");
+        }
+    }
+
+    /**
+     * Updates the status bar with current text statistics
+     */
+    private void updateStatistics() {
+        String text = textArea.getText();
+        int chars = text.length();
+        int charsNoSpaces = text.replaceAll("\\s+", "").length();
+        int words = text.trim().isEmpty() ? 0 : text.trim().split("\\s+").length;
+        int lines = textArea.getLineCount();
+
+        try {
+            int caretPos = textArea.getCaretPosition();
+            int lineNum = textArea.getLineOfOffset(caretPos) + 1;
+            int colNum = caretPos - textArea.getLineStartOffset(textArea.getLineOfOffset(caretPos)) + 1;
+
+            statusBar.setText(String.format("Line: %d  Column: %d  |  Words: %d  |  Characters: %d  |  Characters (no spaces): %d  |  Lines: %d",
+                    lineNum, colNum, words, chars, charsNoSpaces, lines));
+        } catch (Exception e) {
+            statusBar.setText(String.format("Words: %d  |  Characters: %d  |  Characters (no spaces): %d  |  Lines: %d",
+                    words, chars, charsNoSpaces, lines));
         }
     }
 }
